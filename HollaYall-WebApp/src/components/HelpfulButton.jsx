@@ -1,0 +1,2 @@
+import { ArrowBigUp } from 'lucide-react';
+export default function HelpfulButton({count=0,active=false,onClick,disabled=false,label='Helpful'}){return <button type="button" onClick={onClick} disabled={disabled} aria-pressed={active} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold transition disabled:opacity-60 ${active?'bg-orange-50 text-orange-700':'text-gray-600 hover:bg-gray-100 hover:text-orange-700'}`}><ArrowBigUp className="h-5 w-5"/><span>{count}</span><span className="sr-only">{label}</span></button>}
