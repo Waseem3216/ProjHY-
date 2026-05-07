@@ -1,0 +1,158 @@
+const now = new Date();
+const isoHoursAgo = (hours) => new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
+
+export const demoPosts = [
+  {
+    id: '6b166d73-c0a7-4f28-a7a6-860cc2afbd91',
+    title: 'Where can I study late near UH without spending money?',
+    body: 'I have a midterm this week and my apartment is too loud. I am looking for a calm place open late around University of Houston or Midtown. Free or very cheap would help a lot.',
+    category: 'Quiet Study Spots',
+    area: 'University of Houston',
+    urgency: 'Soon',
+    tags: ['study-spot', 'late-night', 'local-tip'],
+    anonymous_name: 'Anonymous Cougar',
+    anonymous_user_id: 'ba29b5f3-777b-441d-9879-08c1e4e2da02',
+    helpful_count: 8,
+    reply_count: 3,
+    is_solved: true,
+    accepted_reply_id: '1d927d8e-bd7d-4cab-8f9d-fc33fa567a31',
+    report_count: 0,
+    created_at: isoHoursAgo(5),
+    updated_at: isoHoursAgo(1),
+    has_helpful_vote: false
+  },
+  {
+    id: '2a3f2351-4282-4307-a080-9555807073dd',
+    title: 'Affordable printing around Third Ward or campus?',
+    body: 'I need to print a short packet before class tomorrow. Does anyone know a cheaper option than the first place that pops up on Google? I do not need color, just reliable black and white printing.',
+    category: 'Money & Budgeting',
+    area: 'Third Ward',
+    urgency: 'Normal',
+    tags: ['parking', 'local-tip'],
+    anonymous_name: 'Bayou Helper',
+    anonymous_user_id: '42d9afcb-5d6e-4a4c-b28e-c2b7dbd09011',
+    helpful_count: 4,
+    reply_count: 2,
+    is_solved: false,
+    accepted_reply_id: null,
+    report_count: 0,
+    created_at: isoHoursAgo(18),
+    updated_at: isoHoursAgo(17),
+    has_helpful_vote: false
+  },
+  {
+    id: 'da1eed03-3a18-4b73-8256-15620c884738',
+    title: 'Interview tips for a first internship in Houston?',
+    body: 'I have my first real internship interview next week. It is for a small tech company in Houston. What should I prepare besides the usual resume answers?',
+    category: 'Career & Interviews',
+    area: 'Downtown Houston',
+    urgency: 'Soon',
+    tags: ['interview', 'internship', 'beginner-friendly'],
+    anonymous_name: 'Space City Owl',
+    anonymous_user_id: '40f22df4-a1da-4ec2-b98e-a6218e034ba3',
+    helpful_count: 11,
+    reply_count: 4,
+    is_solved: false,
+    accepted_reply_id: null,
+    report_count: 0,
+    created_at: isoHoursAgo(31),
+    updated_at: isoHoursAgo(4),
+    has_helpful_vote: false
+  },
+  {
+    id: 'b337b839-b790-45e1-9cb5-164e69632adf',
+    title: 'Cheapest filling food near Midtown after evening class?',
+    body: 'Looking for a decent meal that does not wipe out my budget. Preferably something I can pick up after 8 PM near Midtown or UH. Vegetarian options are a plus but not required.',
+    category: 'Food Deals',
+    area: 'Midtown',
+    urgency: 'Low',
+    tags: ['cheap-food', 'late-night', 'local-tip'],
+    anonymous_name: 'H-Town Helper',
+    anonymous_user_id: 'd59d3216-681e-4e87-aa75-94d38ca81c05',
+    helpful_count: 6,
+    reply_count: 1,
+    is_solved: false,
+    accepted_reply_id: null,
+    report_count: 0,
+    created_at: isoHoursAgo(50),
+    updated_at: isoHoursAgo(49),
+    has_helpful_vote: false
+  },
+  {
+    id: '72d2eb8e-79a1-4d91-9136-f8d0de4e2eca',
+    title: 'Beginner-friendly explanation of derivatives?',
+    body: 'I am stuck on what a derivative actually means. I can do some formulas, but the concept is not clicking. Can someone explain it with a simple real-life example?',
+    category: 'Study Help',
+    area: 'Houston Community College',
+    urgency: 'Urgent',
+    tags: ['math', 'beginner-friendly', 'urgent'],
+    anonymous_name: 'Study Panther',
+    anonymous_user_id: '35d57054-4718-45f9-b0b6-c01ca848918b',
+    helpful_count: 2,
+    reply_count: 0,
+    is_solved: false,
+    accepted_reply_id: null,
+    report_count: 0,
+    created_at: isoHoursAgo(1),
+    updated_at: isoHoursAgo(1),
+    has_helpful_vote: false
+  }
+];
+
+export const demoReplies = [
+  {
+    id: '1d927d8e-bd7d-4cab-8f9d-fc33fa567a31',
+    post_id: '6b166d73-c0a7-4f28-a7a6-860cc2afbd91',
+    body: 'The MD Anderson Library at UH is usually the best first stop. Check the current hours before you go, but it has quiet floors and study rooms. Bring your Cougar Card if you have one.',
+    anonymous_name: 'Bayou Buddy',
+    anonymous_user_id: 'e9ca38bc-9931-448b-bb8a-fc903a763a33',
+    helpful_count: 5,
+    is_accepted: true,
+    report_count: 0,
+    created_at: isoHoursAgo(4)
+  },
+  {
+    id: 'bc46f376-86d3-4766-8afa-aac76be63901',
+    post_id: '6b166d73-c0a7-4f28-a7a6-860cc2afbd91',
+    body: 'If campus is packed, try a coffee shop with late hours in Midtown. Buy something small if you can and keep headphones on. I would not share exact personal plans publicly.',
+    anonymous_name: 'Houston Neighbor',
+    anonymous_user_id: '2e1ca43d-51e6-4b0f-8b1b-28379eca7abc',
+    helpful_count: 2,
+    is_accepted: false,
+    report_count: 0,
+    created_at: isoHoursAgo(3)
+  },
+  {
+    id: '715d39e2-e651-4f15-aaee-811aab8ea1cb',
+    post_id: '2a3f2351-4282-4307-a080-9555807073dd',
+    body: 'Check the campus library printers first. They are usually cheaper than private print shops and you can avoid giving extra personal info to random stores.',
+    anonymous_name: 'Local Owl',
+    anonymous_user_id: '7a7d8559-9d9d-4701-a586-d013837a7d89',
+    helpful_count: 3,
+    is_accepted: false,
+    report_count: 0,
+    created_at: isoHoursAgo(16)
+  },
+  {
+    id: '43e181fb-65d0-4a06-bf1f-cc827fbb18f8',
+    post_id: 'da1eed03-3a18-4b73-8256-15620c884738',
+    body: 'Prepare a 60-second story for: a time you learned something fast, a time you worked with a team, and why Houston. Ask them what success looks like after 90 days.',
+    anonymous_name: 'Space City Friend',
+    anonymous_user_id: '7ceaf3a9-bb45-4036-92f2-6cab82549cfb',
+    helpful_count: 7,
+    is_accepted: false,
+    report_count: 0,
+    created_at: isoHoursAgo(26)
+  },
+  {
+    id: '0f9ac732-6b82-4f33-a62b-c885ab8340e2',
+    post_id: 'b337b839-b790-45e1-9cb5-164e69632adf',
+    body: 'Look for student-budget bowls or tacos near Midtown, but double-check hours because late-night options change. Consider splitting larger portions into two meals.',
+    anonymous_name: 'Third Ward Guide',
+    anonymous_user_id: '3f47cf28-123d-4554-aa18-a72e933ec93b',
+    helpful_count: 2,
+    is_accepted: false,
+    report_count: 0,
+    created_at: isoHoursAgo(48)
+  }
+];
