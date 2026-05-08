@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Clock3, MessageSquare, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock3, MessageSquare, RefreshCw, ShieldCheck, Trash2, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AttachmentGrid from './AttachmentGrid';
 import { AreaBadge, CategoryBadge, SolvedBadge, TagPill, UrgencyBadge } from './Badges';
@@ -8,7 +8,7 @@ import LoadingSpinner from './LoadingSpinner';
 import ReplyCard from './ReplyCard';
 import ReplyForm from './ReplyForm';
 import ReportButton from './ReportButton';
-import { fetchPostWithReplies, createReply, markAcceptedAnswer, reportContent, toggleHelpfulVote } from '../lib/api';
+import { adminRemoveContent, fetchPostWithReplies, createReply, markAcceptedAnswer, reportContent, toggleHelpfulVote } from '../lib/api';
 import { formatDateTime, pluralize, relativeTime } from '../utils/format';
 
 export default function PostDetail({ postId, currentProfile, onBoardChanged, notify }) {
@@ -36,6 +36,7 @@ export default function PostDetail({ postId, currentProfile, onBoardChanged, not
 
   const isCreator = useMemo(() => Boolean(currentProfile?.id && post?.anonymous_user_id === currentProfile.id), [currentProfile?.id, post?.anonymous_user_id]);
   const acceptedReply = replies.find((reply) => reply.is_accepted);
+  const isAdmin = Boolean(currentProfile?.isAdmin);
 
   async function withBusy(action, successTitle) {
     setBusy(true);
@@ -49,6 +50,15 @@ export default function PostDetail({ postId, currentProfile, onBoardChanged, not
     } finally {
       setBusy(false);
     }
+  }
+
+
+  async function removePostAsAdmin() {
+    if (!window.confirm('Remove this post from HollaYall? This action cannot be undone.')) return;
+    await withBusy(async () => {
+      await adminRemoveContent('post', post.id);
+      window.location.hash = '/board';
+    }, 'Post removed');
   }
 
   if (loading) return <LoadingSpinner label="Loading the full question…" />;
@@ -122,6 +132,12 @@ export default function PostDetail({ postId, currentProfile, onBoardChanged, not
                 Refresh
               </button>
               <ReportButton onReport={(reason, details) => withBusy(() => reportContent('post', post.id, reason, details), 'Report submitted')} disabled={busy} />
+              {isAdmin ? (
+                <button type="button" className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-60" onClick={removePostAsAdmin} disabled={busy}>
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Remove post
+                </button>
+              ) : null}
             </div>
           </div>
         </article>

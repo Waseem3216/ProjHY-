@@ -20,15 +20,15 @@ export default function SetupRequired() {
               Connect Supabase to use the live production board.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-8 text-slate-650">
-              HollaYall! no longer auto-switches into demo mode for production builds. Add your Supabase environment variables, enable anonymous auth, and restart the app.
+              HollaYall! no longer auto-switches into demo mode for production builds. Add your Supabase environment variables, run the database schema, enable email/password auth, and restart the app.
             </p>
           </div>
 
           <div className="grid gap-4 p-6 sm:p-8 md:grid-cols-3">
             {[
-              { icon: Database, title: 'Run schema.sql', text: 'Creates posts, replies, votes, reports, policies, and triggers.' },
+              { icon: Database, title: 'Run schema.sql', text: 'Creates accounts, posts, replies, reports, admin tools, policies, and triggers.' },
               { icon: KeyRound, title: 'Add env vars', text: 'Use Project URL plus anon or publishable browser key.' },
-              { icon: ShieldCheck, title: 'Enable anonymous auth', text: 'Lets RLS identify anonymous creators without real profiles.' }
+              { icon: ShieldCheck, title: 'Enable email auth', text: 'Lets users sign up and sign in with email/username and password.' }
             ].map(({ icon: Icon, title, text }) => (
               <div key={title} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                 <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-bayou-700 shadow-sm">
@@ -61,7 +61,7 @@ export default function SetupRequired() {
             <ol className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
               <li><strong>1.</strong> Supabase project created.</li>
               <li><strong>2.</strong> <code className="rounded bg-slate-100 px-1.5 py-0.5">supabase/schema.sql</code> executed.</li>
-              <li><strong>3.</strong> Anonymous Sign-Ins enabled.</li>
+              <li><strong>3.</strong> Email provider enabled in Supabase Auth.</li>
               <li><strong>4.</strong> Env vars added locally and in deployment provider.</li>
               <li><strong>5.</strong> Build command set to <code className="rounded bg-slate-100 px-1.5 py-0.5">npm run build</code>.</li>
             </ol>

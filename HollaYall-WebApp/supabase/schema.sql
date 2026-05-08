@@ -4,6 +4,157 @@
 
 create extension if not exists pgcrypto;
 
+
+-- Account profiles for email/password sign-in and hidden token-based elevated access.
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'app_role') then
+    create type public.app_role as enum ('user', 'admin');
+  end if;
+end $$;
+
+create table if not exists public.app_profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text unique,
+  username text unique not null check (username ~ '^[a-z0-9_]{3,24}$'),
+  anonymous_name text not null check (char_length(trim(anonymous_name)) between 2 and 80),
+  role public.app_role not null default 'user',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_app_profiles_role on public.app_profiles (role);
+create index if not exists idx_app_profiles_username on public.app_profiles (username);
+
+create or replace function public.normalize_username(value text)
+returns text
+language sql
+immutable
+as $$
+  select left(regexp_replace(lower(trim(coalesce(value, ''))), '[^a-z0-9_]+', '', 'g'), 24)
+$$;
+
+create or replace function public.random_anonymous_name()
+returns text
+language plpgsql
+as $$
+declare
+  names text[] := array['Anonymous Cougar','Bayou Helper','Space City Owl','Campus Ghost','Houston Neighbor','Helpful Longhorn','Study Panther','H-Town Helper','Local Owl','Bayou Buddy'];
+begin
+  return names[1 + floor(random() * array_length(names, 1))::int];
+end;
+$$;
+
+create or replace function public.handle_new_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  base_username text;
+  candidate text;
+  suffix integer := 0;
+begin
+  base_username := public.normalize_username(coalesce(new.raw_user_meta_data->>'username', split_part(coalesce(new.email, 'user'), '@', 1)));
+  if char_length(base_username) < 3 then
+    base_username := 'user_' || left(replace(new.id::text, '-', ''), 8);
+  end if;
+
+  candidate := base_username;
+  while exists (select 1 from public.app_profiles where username = candidate) loop
+    suffix := suffix + 1;
+    candidate := left(base_username, 18) || '_' || suffix::text;
+  end loop;
+
+  insert into public.app_profiles (id, email, username, anonymous_name, role)
+  values (
+    new.id,
+    new.email,
+    candidate,
+    coalesce(new.raw_user_meta_data->>'anonymous_name', public.random_anonymous_name()),
+    'user'
+  )
+  on conflict (id) do update
+  set email = excluded.email,
+      updated_at = now();
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created_hollayall_profile on auth.users;
+create trigger on_auth_user_created_hollayall_profile
+after insert on auth.users
+for each row execute function public.handle_new_auth_user();
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.app_profiles
+    where id = auth.uid()
+      and role = 'admin'
+  );
+$$;
+
+create or replace function public.is_username_available(p_username text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select not exists (
+    select 1 from public.app_profiles
+    where username = public.normalize_username(p_username)
+  );
+$$;
+
+create or replace function public.resolve_login_email(p_identifier text)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select email from public.app_profiles
+  where username = public.normalize_username(p_identifier)
+  limit 1;
+$$;
+
+create or replace function public.claim_admin_with_token(p_token text)
+returns public.app_role
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'You must be signed in.';
+  end if;
+
+  if coalesce(trim(p_token), '') <> '215749' then
+    raise exception 'Invalid access token.';
+  end if;
+
+  update public.app_profiles
+  set role = 'admin', updated_at = now()
+  where id = auth.uid();
+
+  return 'admin';
+end;
+$$;
+
+grant execute on function public.is_username_available(text) to anon, authenticated;
+grant execute on function public.resolve_login_email(text) to anon, authenticated;
+grant execute on function public.claim_admin_with_token(text) to authenticated;
+
+
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   name text unique not null,
@@ -588,3 +739,147 @@ begin
     end;
   end if;
 end $$;
+
+
+-- Production auth/admin policy overrides for account-based sign-in.
+alter table public.app_profiles enable row level security;
+
+drop policy if exists "Read own profile or admin profiles" on public.app_profiles;
+create policy "Read own profile or admin profiles" on public.app_profiles
+  for select to authenticated
+  using (auth.uid() = id or public.is_admin());
+
+drop policy if exists "Create own profile fallback" on public.app_profiles;
+create policy "Create own profile fallback" on public.app_profiles
+  for insert to authenticated
+  with check (auth.uid() = id and role = 'user');
+
+drop policy if exists "Update own profile basics" on public.app_profiles;
+-- User profile updates are intentionally not exposed from the browser.
+-- Role changes happen only through claim_admin_with_token().
+
+-- Restrict app content to signed-in users while keeping admin visibility broad.
+drop policy if exists "Read visible posts" on public.posts;
+create policy "Read visible posts" on public.posts
+  for select to authenticated
+  using (report_count < 5);
+
+drop policy if exists "Admins read all posts" on public.posts;
+create policy "Admins read all posts" on public.posts
+  for select to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Admins delete posts" on public.posts;
+create policy "Admins delete posts" on public.posts
+  for delete to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Read visible replies" on public.replies;
+create policy "Read visible replies" on public.replies
+  for select to authenticated
+  using (report_count < 5);
+
+drop policy if exists "Admins read all replies" on public.replies;
+create policy "Admins read all replies" on public.replies
+  for select to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Admins delete replies" on public.replies;
+create policy "Admins delete replies" on public.replies
+  for delete to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Admins read reports" on public.reports;
+create policy "Admins read reports" on public.reports
+  for select to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Admins delete reports" on public.reports;
+create policy "Admins delete reports" on public.reports
+  for delete to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Read visible post attachments" on public.post_attachments;
+create policy "Read visible post attachments" on public.post_attachments
+  for select to authenticated
+  using (exists (select 1 from public.posts p where p.id = post_id and p.report_count < 5));
+
+drop policy if exists "Admins read all post attachments" on public.post_attachments;
+create policy "Admins read all post attachments" on public.post_attachments
+  for select to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Admins delete post attachments" on public.post_attachments;
+create policy "Admins delete post attachments" on public.post_attachments
+  for delete to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Public read post attachments storage" on storage.objects;
+drop policy if exists "Authenticated read post attachments storage" on storage.objects;
+create policy "Authenticated read post attachments storage" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'post-attachments');
+
+create or replace function public.admin_keep_content(p_target_type text, p_target_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  if p_target_type not in ('post', 'reply') then
+    raise exception 'Invalid target type.';
+  end if;
+
+  perform set_config('app.internal_update', 'true', true);
+  delete from public.reports where target_type = p_target_type and target_id = p_target_id;
+
+  if p_target_type = 'post' then
+    update public.posts set report_count = 0, updated_at = now() where id = p_target_id;
+  else
+    update public.replies set report_count = 0, updated_at = now() where id = p_target_id;
+  end if;
+
+  return true;
+end;
+$$;
+
+create or replace function public.admin_remove_content(p_target_type text, p_target_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Admin access required.';
+  end if;
+
+  if p_target_type = 'post' then
+    delete from public.reports
+    where (target_type = 'post' and target_id = p_target_id)
+       or (target_type = 'reply' and target_id in (select id from public.replies where post_id = p_target_id));
+    delete from public.posts where id = p_target_id;
+  elsif p_target_type = 'reply' then
+    delete from public.reports where target_type = 'reply' and target_id = p_target_id;
+    delete from public.replies where id = p_target_id;
+  else
+    raise exception 'Invalid target type.';
+  end if;
+
+  return true;
+end;
+$$;
+
+grant execute on function public.admin_keep_content(text, uuid) to authenticated;
+grant execute on function public.admin_remove_content(text, uuid) to authenticated;
+
+
+drop trigger if exists app_profiles_set_updated_at on public.app_profiles;
+create trigger app_profiles_set_updated_at
+before update on public.app_profiles
+for each row execute function public.set_updated_at();
